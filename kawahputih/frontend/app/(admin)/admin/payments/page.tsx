@@ -7,6 +7,7 @@ import { PageHeader, SectionCard, StatusPill } from "@/components/panel/panel-ui
 import { SearchInput } from "@/components/panel/panel-toolbar";
 import { paymentService } from "@/services/payment.api.service";
 import { rupiah } from "@/lib/business";
+import { backendOrigin } from "@/lib/media";
 import { paymentMethodLabel, PAYMENT_METHOD_GROUPS } from "@/config/payment.config";
 import type { Payment, PaymentStatus, SettlementStatus } from "@/types/api";
 
@@ -286,7 +287,7 @@ export default function AdminPaymentsPage() {
             {detail.proof_url ? (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <a
-                  href={`${process.env.NEXT_PUBLIC_API_ORIGIN ?? "http://localhost:8080"}${detail.proof_url}`}
+                  href={`${backendOrigin}${detail.proof_url}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex h-9 items-center gap-1.5 rounded-md border border-[#1768ad] bg-white px-3 text-xs font-semibold text-[#1768ad] hover:bg-[#eef7fd]"

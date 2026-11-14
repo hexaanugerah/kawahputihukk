@@ -3,6 +3,7 @@ package seed
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -62,35 +63,71 @@ func Run(ctx context.Context, db *gorm.DB, log *zap.Logger) error {
 	return nil
 }
 
-// seedPaymentDestinations mengisi daftar awal tujuan pembayaran (tanpa nomor
-// rekening) agar admin tinggal mengisi nomor dan nama pemiliknya.
+// seedPaymentDestinations mengisi daftar awal tujuan pembayaran.
+// Untuk keperluan UJI COBA, nomor rekening/HP diisi angka ACAK — bukan kosong —
+// supaya halaman pembayaran langsung menampilkan nomor tujuan. Nomor ini tetap
+// BISA DIUBAH kapan saja: lewat endpoint admin (PUT /admin/payment-destinations/:id)
+// atau langsung di tabel payment_destinations.
 func seedPaymentDestinations(ctx context.Context, db *gorm.DB) error {
 	var count int64
 	if err := db.WithContext(ctx).Model(&payments.PaymentDestination{}).Count(&count).Error; err != nil {
 		return err
 	}
-	if count > 0 {
+	if count == 0 {
+		defaults := []payments.PaymentDestination{
+			{MethodCode: payments.MethodQRIS, ProviderName: "QRIS (semua e-wallet & mobile banking)", Active: false, SortOrder: 1},
+			{MethodCode: payments.MethodBCAVA, ProviderName: "BCA", AccountNumber: randomAccountNumber("8808", 8), AccountName: "Kawah Putih Official", Active: true, SortOrder: 10},
+			{MethodCode: payments.MethodBRIVA, ProviderName: "BRI", AccountNumber: randomAccountNumber("88908", 7), AccountName: "Kawah Putih Official", Active: true, SortOrder: 11},
+			{MethodCode: payments.MethodMandiriVA, ProviderName: "Mandiri", AccountNumber: randomAccountNumber("8908", 8), AccountName: "Kawah Putih Official", Active: true, SortOrder: 12},
+			{MethodCode: payments.MethodBNIVA, ProviderName: "BNI", AccountNumber: randomAccountNumber("988", 9), AccountName: "Kawah Putih Official", Active: true, SortOrder: 13},
+			{MethodCode: payments.MethodGoPay, ProviderName: "GoPay", AccountNumber: randomAccountNumber("08", 10), AccountName: "Kawah Putih Official", Active: true, SortOrder: 20},
+			{MethodCode: payments.MethodDANA, ProviderName: "DANA", AccountNumber: randomAccountNumber("08", 10), AccountName: "Kawah Putih Official", Active: true, SortOrder: 21},
+			{MethodCode: payments.MethodOVO, ProviderName: "OVO", AccountNumber: randomAccountNumber("08", 10), AccountName: "Kawah Putih Official", Active: true, SortOrder: 22},
+			{MethodCode: payments.MethodShopeePay, ProviderName: "ShopeePay", AccountNumber: randomAccountNumber("08", 10), AccountName: "Kawah Putih Official", Active: true, SortOrder: 23},
+			{MethodCode: payments.MethodAlfamart, ProviderName: "Alfamart", AccountNumber: randomAccountNumber("", 12), AccountName: "Kawah Putih Official", Active: true, SortOrder: 30},
+			{MethodCode: payments.MethodIndomaret, ProviderName: "Indomaret", AccountNumber: randomAccountNumber("", 12), AccountName: "Kawah Putih Official", Active: true, SortOrder: 31},
+		}
+		for i := range defaults {
+			if err := db.WithContext(ctx).Create(&defaults[i]).Error; err != nil {
+				return err
+			}
+		}
 		return nil
 	}
-	defaults := []payments.PaymentDestination{
-		{MethodCode: payments.MethodQRIS, ProviderName: "QRIS (semua e-wallet & mobile banking)", Active: false, SortOrder: 1},
-		{MethodCode: payments.MethodBCAVA, ProviderName: "BCA", Active: true, SortOrder: 10},
-		{MethodCode: payments.MethodBRIVA, ProviderName: "BRI", Active: true, SortOrder: 11},
-		{MethodCode: payments.MethodMandiriVA, ProviderName: "Mandiri", Active: true, SortOrder: 12},
-		{MethodCode: payments.MethodBNIVA, ProviderName: "BNI", Active: true, SortOrder: 13},
-		{MethodCode: payments.MethodGoPay, ProviderName: "GoPay", Active: true, SortOrder: 20},
-		{MethodCode: payments.MethodDANA, ProviderName: "DANA", Active: true, SortOrder: 21},
-		{MethodCode: payments.MethodOVO, ProviderName: "OVO", Active: true, SortOrder: 22},
-		{MethodCode: payments.MethodShopeePay, ProviderName: "ShopeePay", Active: true, SortOrder: 23},
-		{MethodCode: payments.MethodAlfamart, ProviderName: "Alfamart", Active: true, SortOrder: 30},
-		{MethodCode: payments.MethodIndomaret, ProviderName: "Indomaret", Active: true, SortOrder: 31},
+
+	// Database yang sudah pernah di-seed dengan nomor kosong tetap diisi nomor
+	// acak agar uji coba bisa jalan tanpa harus menghapus data. QRIS tidak
+	// menyimpan nomor (menampilkan QR dari provider), jadi dilewati.
+	var rows []payments.PaymentDestination
+	if err := db.WithContext(ctx).
+		Where("method_code <> ? AND (account_number = '' OR account_number IS NULL)", payments.MethodQRIS).
+		Find(&rows).Error; err != nil {
+		return err
 	}
-	for i := range defaults {
-		if err := db.WithContext(ctx).Create(&defaults[i]).Error; err != nil {
+	for i := range rows {
+		rows[i].AccountNumber = randomAccountNumber("", 12)
+		if rows[i].AccountName == "" {
+			rows[i].AccountName = "Kawah Putih Official"
+		}
+		if err := db.WithContext(ctx).Model(&rows[i]).Updates(map[string]interface{}{
+			"account_number": rows[i].AccountNumber,
+			"account_name":   rows[i].AccountName,
+		}).Error; err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// randomAccountNumber membuat nomor placeholder acak (untuk uji coba):
+// prefix di depan (mis. "8808" untuk VA BCA) + sisanya digit 0-9 acak.
+func randomAccountNumber(prefix string, digits int) string {
+	b := make([]byte, 0, len(prefix)+digits)
+	b = append(b, prefix...)
+	for i := 0; i < digits; i++ {
+		b = append(b, byte('0'+rand.Intn(10)))
+	}
+	return string(b)
 }
 
 func seedRoles(ctx context.Context, db *gorm.DB) error {

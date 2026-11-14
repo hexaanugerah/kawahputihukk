@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { bookingService, paymentService, BookingError } from "@/services/api";
 import { rupiah } from "@/lib/business";
+import { backendOrigin } from "@/lib/media";
 import {
   PAYMENT_METHOD_GROUPS,
   findPaymentMethod,
@@ -579,7 +580,7 @@ export function PaymentPanel({ code }: { code?: string }) {
                       <CheckCircle2 className="h-3.5 w-3.5" /> Bukti pembayaran sudah diunggah
                     </p>
                     <a
-                      href={`${process.env.NEXT_PUBLIC_API_ORIGIN ?? "http://localhost:8080"}${payment.proof_url}`}
+                      href={`${backendOrigin}${payment.proof_url}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="mt-1 inline-block text-[11px] font-semibold text-[#1768ad] hover:underline"

@@ -4,6 +4,7 @@ package routes
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/KawahPutih/backend/internal/bootstrap"
 	"github.com/KawahPutih/backend/internal/domain/analytics"
@@ -32,7 +33,9 @@ import (
 
 func NewRouter(app *bootstrap.App, log *zap.Logger) *gin.Engine {
 	r := gin.New()
-	r.Use(middleware.CORS(app.FrontendURL))
+	// FRONTEND_URL bisa berisi beberapa origin dipisah koma
+	// (localhost + IP LAN untuk akses dari HP).
+	r.Use(middleware.CORS(strings.Split(app.FrontendURL, ",")))
 	r.Use(middleware.Recovery(log))
 	r.Use(middleware.RequestLogger(log))
 	r.Use(middleware.RequestID())
