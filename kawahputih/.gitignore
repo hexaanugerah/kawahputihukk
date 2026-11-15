@@ -14,6 +14,9 @@ tsconfig.tsbuildinfo
 .env
 .env.*
 !.env.example
+prod.env
+!.env.prod.example
+!.prod.env.example
 
 # --- Local credential / test payloads ---------------------------------------
 login.json

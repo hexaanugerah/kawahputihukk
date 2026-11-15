@@ -1,0 +1,81 @@
+# Compose production: backend image dari GHCR + MySQL + Redis.
+# Pakai: cp prod.env.example prod.env (isi semua nilainya), lalu:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Catatan: migrasi schema & seed berjalan otomatis saat backend start,
+# jadi tidak perlu perintah migrasi manual.
+
+name: KawahPutihProd
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    # prod.env juga di-load ke sini supaya MYSQL_ROOT_PASSWORD bisa diatur
+    # dari satu file yang sama dengan backend.
+    env_file:
+      - path: ./prod.env
+        required: true
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: kawah_putih_db
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Database tidak perlu dipublikasikan ke luar mesin.
+    # Kalau benar-benar butuh akses dari luar (misal admin tools), buka port ini:
+    # ports:
+    #   - "3306:3306"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: ghcr.io/hexaanugerah/kawahputih-backend:latest
+    restart: unless-stopped
+    env_file:
+      - path: ./prod.env
+        required: true
+    environment:
+      # Nilai-nilai ini menimpa isi prod.env supaya service saling
+      # menemukan lewat network compose, bukan lewat IP.
+      APP_ENV: production
+      APP_PORT: "8080"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      REDIS_ADDR: redis:6379
+      UPLOAD_DIR: /app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  # Frontend Next.js tidak dijalankan lewat compose ini karena belum ada
+  # Dockerfile frontend. Jalankan di VPS yang sama lewat `npm ci && npm run
+  # build && npm start` (port 3000), atau pakai platform seperti Vercel.
+  # Jangan lupa origin frontend didaftarkan di FRONTEND_URL pada prod.env.
+
+volumes:
+  mysql-data:
+  uploads:

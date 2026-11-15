@@ -69,7 +69,17 @@ Setiap push ke `main` menjalankan dua workflow GitHub Actions:
 docker pull ghcr.io/hexaanugerah/kawahputih-backend:latest
 ```
 
-Untuk menjalankan di server, siapkan file `.env` lengkap (DB, JWT secrets, Midtrans, SMTP) lalu jalankan image tersebut dengan `--env-file .env`. Backend menolak start di mode production kalau secrets atau database tidak lengkap; migrasi schema berjalan otomatis saat startup.
+Untuk menjalankan di server (VPS), pakai compose production yang menggabungkan backend image dari GHCR + MySQL + Redis:
+
+```bash
+git clone https://github.com/hexaanugerah/kawahputihukk
+cd kawahputihukk/kawahputih/docker
+cp prod.env.example prod.env   # isi semua nilai (JWT secrets, DB, Midtrans, SMTP)
+docker compose -f docker-compose.prod.yml up -d
+curl http://localhost:8080/healthz   # {"status":"ok"} berarti jalan
+```
+
+MySQL tidak diekspos ke luar mesin (hanya network internal), data tersimpan di volume `mysql-data`, dan berkas upload galeri di volume `uploads`. Backend menolak start di mode production kalau secrets atau database tidak lengkap; migrasi schema berjalan otomatis saat startup. Frontend Next.js dijalankan terpisah (`npm ci && npm run build && npm start` di VPS yang sama, atau di Vercel) - origin-nya wajib terdaftar di `FRONTEND_URL` di `prod.env`.
 
 ## Keamanan
 
