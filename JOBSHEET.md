@@ -94,3 +94,18 @@
 ---
 
 *Tanggal dibuat: 15 November 2026 · Diperbarui otomatis melalui commit GitHub*
+
+---
+
+## 📄 Dokumen PDF (folder `docs/`)
+
+| Dokumen | Isi |
+|---------|-----|
+| [01-final-bug-fixing-release-candidate.pdf](docs/01-final-bug-fixing-release-candidate.pdf) | Laporan bug fixed (TC06/07/20/25, double booking) + isu terbuka + checklist RC |
+| [02-production-staging-deployment.pdf](docs/02-production-staging-deployment.pdf) | Panduan deployment, matriks environment, env vars wajib, checklist pra-deploy |
+| [03-project-documentation.pdf](docs/03-project-documentation.pdf) | Manual pengguna, arsitektur teknis, alur bisnis end-to-end |
+| [04-repository-readme.pdf](docs/04-repository-readme.pdf) | Konten README lengkap versi PDF |
+| [05-api-documentation.pdf](docs/05-api-documentation.pdf) | Referensi seluruh endpoint API v1 per domain |
+| [06-persiapan-slide-presentasi.pdf](docs/06-persiapan-slide-presentasi.pdf) | Rencana 14 slide presentasi + panduan desain & timing |
+| [07-demo-rehearsal.pdf](docs/07-demo-rehearsal.pdf) | Runbook demo end-to-end, jadwal rehearsal, rencana cadangan |
+| [08-pertanggungjawaban-individu.pdf](docs/08-pertanggungjawaban-individu.pdf) | Peta kontribusi per modul, template pernyataan, antisipasi tanya-jawab |
